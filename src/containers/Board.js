@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
-import styled from 'styled-components';
-import Lane from '../components/Lane/Lane';
-
+import React from "react";
+import styled from "styled-components";
+import Lane from "../components/Lane/Lane";
+import withDataFetching from "../WithDataFetching";
 const BoardWrapper = styled.div`
   display: flex;
   justify-content: space-between;
@@ -13,23 +13,58 @@ const BoardWrapper = styled.div`
   }
 `;
 
-class Board extends Component {
+class Board extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      tickets: [],
+    };
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps.data !== this.props.data) {
+      this.setState({ tickets: this.props.data });
+    }
+  }
+  onDragStart = (e, id) => {
+    e.dataTransfer.setData("id", id);
+  };
+  onDragOver = (e) => {
+    e.preventDefault();
+  };
+  onDrop = (e, laneId) => {
+    const id = e.dataTransfer.getData("id");
+    const tickets = this.state.tickets.filter((ticket) => {
+      if (ticket.id === parseInt(id)) {
+        ticket.lane = laneId;
+      }
+      return ticket;
+    });
+    this.setState({
+      ...this.state,
+      tickets,
+    });
+  };
   render() {
-    const lanes = [
-      { id: 1, title: 'To Do' },
-      { id: 2, title: 'In Progress' },
-      { id: 3, title: 'Review' },
-      { id: 4, title: 'Done' },
-    ];
-
+    const { lanes, loading, error } = this.props;
     return (
       <BoardWrapper>
-        {lanes.map(lane => (
-          <Lane key={lane.id} title={lane.title} />
+        {lanes.map((lane) => (
+          <Lane
+            key={lane.id}
+            title={lane.title}
+            laneId={lane.id}
+            onDrop={this.onDrop}
+            loading={loading}
+            error={error}
+            onDragStart={this.onDragStart}
+            onDragOver={this.onDragOver}
+            tickets={this.state.tickets.filter(
+              (ticket) => ticket.lane === lane.id
+            )}
+          />
         ))}
       </BoardWrapper>
     );
   }
 }
-
-export default Board;
+export default withDataFetching(Board);
